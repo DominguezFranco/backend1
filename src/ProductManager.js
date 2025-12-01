@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs from "fs/promises";
 import crypto from "crypto";
 
 
@@ -35,9 +35,9 @@ class ProductManager {
         }
     }
 
-    async getProductById(pid, updates){
+    async setProductById(pid, updates){
         try{
-            const products = await this.addProduct();
+            const products = await this.getProducts();
             const indexProduct = products.findIndex(prod => prod.id === pid);
             if (indexProduct === -1) throw new Error ("Producto no encontrado");
             products [indexProduct] = {...products[indexProduct], ...updates};

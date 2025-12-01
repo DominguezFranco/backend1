@@ -49,7 +49,7 @@ app.put("/api/products/:pid", async (req,res)=>{
     try{
         const pid = req.params.pid;
         const updates = req.body;
-        const products = await productManager.getProductById(pid, updates);
+        const products = await productManager.setProductById(pid, updates);
         res.status(200).json({message:"Producto actualizado con exito"});
     }catch (error){
         res.status(500).json({message: error.message});
