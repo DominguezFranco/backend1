@@ -41,7 +41,8 @@ class ProductManager {
             const indexProduct = products.findIndex(prod => prod.id === pid);
             if (indexProduct === -1) throw new Error ("Producto no encontrado");
             products [indexProduct] = {...products[indexProduct], ...updates};
-            await fs.writeFile(this.pathFile, JSON.stringify(products, null, 2), "utf-8"); 
+            await fs.writeFile(this.pathFile, JSON.stringify(products, null, 2), "utf-8");
+            return products; 
         } catch (error){
             throw new Error ("Error al actualizar el producto" + error.message);
         }

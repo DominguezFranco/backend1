@@ -9,7 +9,7 @@ app.use(express.json());
 const cartManager = new CartManager();
 
 
-app.use(express.json())
+
 const productManager = new ProductManager("./src/products.json");
 
 app.get("/", (req, res)=>{
@@ -50,7 +50,7 @@ app.put("/api/products/:pid", async (req,res)=>{
         const pid = req.params.pid;
         const updates = req.body;
         const products = await productManager.setProductById(pid, updates);
-        res.status(200).json({message:"Producto actualizado con exito"});
+        res.status(200).json({message:"Producto actualizado con exito", products});
     }catch (error){
         res.status(500).json({message: error.message});
     }
