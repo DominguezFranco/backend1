@@ -51,16 +51,6 @@ class CartManager {
         return carts
     }
 
-
-
-
-
-
-
-
-
-
-
 }
 
 export default CartManager;

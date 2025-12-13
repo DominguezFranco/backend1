@@ -1,4 +1,4 @@
-// src/public/js/realTime.js
+
 const socket = io();
 
 function renderProducts(products) {
@@ -34,17 +34,17 @@ function renderProducts(products) {
   });
 }
 
-// recibir la lista (cuando el servidor emite)
+
 socket.on("updateProducts", (products) => {
   renderProducts(products);
 });
 
-// manejar submit con FormData -> POST /api/live-products
+
 const form = document.getElementById("product-form");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const fd = new FormData(form); // toma todos los inputs (incluye file)
+  const fd = new FormData(form);
 
   try {
     const resp = await fetch("/api/live-products", {
@@ -53,7 +53,7 @@ form.addEventListener("submit", async (e) => {
     });
     const data = await resp.json();
     if (data.status === "success") {
-      // no hace falta emitir: el servidor emitió updateProducts
+      
       form.reset();
     } else {
       alert("Error al crear producto");
