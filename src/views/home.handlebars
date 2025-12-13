@@ -1,1 +1,23 @@
-<div>Home</div>
+<h1 class="page-title">Productos actuales</h1>
+
+<ul class="products-list">
+  {{#each products}}
+    <li class="product-card">
+      <img 
+        class="product-image"
+        src="{{thumbnail}}" 
+        alt="{{title}}" 
+      />
+
+      <div class="product-info">
+        <h3 class="product-title">{{title}}</h3>
+        <p class="product-price">$ {{price}}</p>
+      </div>
+    </li>
+  {{/each}}
+</ul>
+
+<a class="realtime-link" href="/realtimeproducts">
+  Ir a productos en tiempo real
+</a>
+

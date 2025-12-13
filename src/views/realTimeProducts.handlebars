@@ -1,0 +1,70 @@
+<h1 class="page-title">Productos en tiempo real</h1>
+
+<div class="form-container">
+  <form id="product-form" class="product-form" enctype="multipart/form-data">
+
+    <label>Nombre de usuario:</label>
+    <input
+      id="username"
+      name="username"
+      type="text"
+      class="form-input"
+      required
+    >
+
+    <label>Imagen del producto:</label>
+    <input
+      id="image"
+      name="image"
+      type="file"
+      class="form-input"
+      accept="image/*"
+      required
+    >
+
+    <label>Nombre del producto:</label>
+    <input
+      id="title"
+      name="title"
+      type="text"
+      class="form-input"
+      required
+    >
+
+    <label>Precio:</label>
+    <input
+      id="price"
+      name="price"
+      type="number"
+      class="form-input"
+      required
+    >
+
+    <label>Número de teléfono:</label>
+    <input
+      id="phone"
+      name="phone"
+      type="text"
+      class="form-input"
+      required
+    >
+
+    <button type="submit" class="form-button">
+      Enviar producto
+    </button>
+
+  </form>
+</div>
+
+<hr>
+
+<h2 class="page-title">Productos cargados:</h2>
+
+<div
+  id="products-container"
+  class="product-grid"
+></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/realTime.js"></script>
+

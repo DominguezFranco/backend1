@@ -1,65 +1,32 @@
-import fs from "fs/promises";
-import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 
+const productsPath = path.resolve("src/products.json");
 
-class ProductManager {
-    constructor(pathFile){
-        this.pathFile = pathFile;
-    }
+export default class ProductManager {
 
-    generateNewId(){
-        return crypto.randomUUID();
-    }
+  getProducts = async () => {
+    if (!fs.existsSync(productsPath)) return [];
+    const data = await fs.promises.readFile(productsPath, "utf-8");
+    return JSON.parse(data);
+  };
 
-    async addProduct(newProduct){
-        try{
-            const fileData = await fs.readFile(this.pathFile, "utf-8");
-            const products = JSON.parse(fileData);
-            const newId = this.generateNewId();
-            const product = {id: newId, ...newProduct};
-            products.push(product);
-            await fs.writeFile(this.pathFile, JSON.stringify(products, null, 2), "utf-8");
-            return products;
-        } catch (error){
-            throw new Error("Error al agregar el producto" + error.message);
-        }
-    }
+  addProduct = async (product) => {
+    const products = await this.getProducts();
+    const newProduct = {
+      id: products.length > 0 ? products[products.length - 1].id + 1 : 1,
+      ...product,
+    };
 
-    async getProducts(){
-        try{
-            const fileData = await fs.readFile(this.pathFile, "utf-8");
-            const products = JSON.parse(fileData);
-            return products;
-        } catch (error){
-            throw new Error ("Error al obtener los productos" + error.message);
-        }
-    }
+    products.push(newProduct);
+    await fs.promises.writeFile(productsPath, JSON.stringify(products, null, 2));
+    return newProduct;
+  };
 
-    async setProductById(pid, updates){
-        try{
-            const products = await this.getProducts();
-            const indexProduct = products.findIndex(prod => prod.id === pid);
-            if (indexProduct === -1) throw new Error ("Producto no encontrado");
-            products [indexProduct] = {...products[indexProduct], ...updates};
-            await fs.writeFile(this.pathFile, JSON.stringify(products, null, 2), "utf-8");
-            return products; 
-        } catch (error){
-            throw new Error ("Error al actualizar el producto" + error.message);
-        }
-    }
-
-    async deleteProductById(pid){
-        try{
-            const products = await this.getProducts();
-            const filteredProducts = products.filter(prod => prod.id !== pid);
-            await fs.writeFile(this.pathFile, JSON.stringify(filteredProducts, null, 2), "utf-8");
-            return filteredProducts;
-        } catch (error){
-            throw new Error ("Error al eliminar el producto" + error.message);
-        }
-    }
-
-
+  deleteProduct = async (id) => {
+    const products = await this.getProducts();
+    const updated = products.filter(p => p.id !== id);
+    await fs.promises.writeFile(productsPath, JSON.stringify(updated, null, 2));
+    return updated;
+  };
 }
-
-export default ProductManager;

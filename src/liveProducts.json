@@ -1,0 +1,34 @@
+[
+  {
+    "id": "1a565903-654b-4f9a-a9e0-f3aec6f3113c",
+    "title": "macbook",
+    "price": 40000,
+    "user": "ivan",
+    "phone": "789456123",
+    "image": "/img/1765575485897-mac.jpg"
+  },
+  {
+    "id": "dd2a0e89-5a20-484f-9241-d6699ccb70bf",
+    "title": "mousepad",
+    "price": 10000,
+    "user": "carlos",
+    "phone": "456789132",
+    "image": "/img/1765575623504-mousepad.jpg"
+  },
+  {
+    "id": "fd8c369c-1d9f-4769-a24b-271b98385368",
+    "title": "auriculares gamer",
+    "price": 18000,
+    "user": "cristian",
+    "phone": "147258369",
+    "image": "/img/1765660873500-auris.webp"
+  },
+  {
+    "id": "fd7969e6-f936-4b91-ab21-944c558b0fb4",
+    "title": "teclado gamer negro",
+    "price": 13000,
+    "user": "richard",
+    "phone": "3578951426",
+    "image": "/img/1765664644421-teclado2.avif"
+  }
+]
