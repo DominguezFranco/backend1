@@ -1,37 +1,87 @@
 import { Router } from "express";
-import ProductManager from "./ProductManager.js";
+import { productModel } from "../models/product.model.js";
 
 const router = Router();
-const manager = new ProductManager();
 
 
-export default (io) => {
+router.get("/", async (req, res) => {
+    try {
+        let { limit = 10, page = 1, sort, query } = req.query;
+        
+        // 1. Filtros
+        let filter = {};
+        if (query) {
+            filter = { 
+                $or: [
+                    { category: query },
+                    { status: query === 'true' }
+                ] 
+            };
+        }
 
-  
-  router.get("/", async (req, res) => {
-    const products = await manager.getProducts();
-    res.json(products);
-  });
+        // 2. Opciones de Paginación y Orden
+        let options = {
+            limit: parseInt(limit),
+            page: parseInt(page),
+            lean: true 
+        };
 
-  
-  router.post("/", async (req, res) => {
-    const newProduct = await manager.addProduct(req.body);
-    
-    const products = await manager.getProducts();
-    io.emit("updateProducts", products);
+        if (sort) {
+            options.sort = { price: sort === 'asc' ? 1 : -1 };
+        }
 
-    res.json({ status: "success", newProduct });
-  });
+        // 3. Ejecución de la consulta con Paginate
+        let result = await productModel.paginate(filter, options);
 
-  
-  router.delete("/:id", async (req, res) => {
-    const id = Number(req.params.id);
+        // 4. Formato de respuesta requerido por la consigna
+        res.send({
+            status: 'success',
+            payload: result.docs,
+            totalPages: result.totalPages,
+            prevPage: result.prevPage,
+            nextPage: result.nextPage,
+            page: result.page,
+            hasPrevPage: result.hasPrevPage,
+            hasNextPage: result.hasNextPage,
+            prevLink: result.hasPrevPage ? `/api/products?page=${result.prevPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}` : null,
+            nextLink: result.hasNextPage ? `/api/products?page=${result.nextPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}` : null
+        });
 
-    const updated = await manager.deleteProduct(id);
-    io.emit("updateProducts", updated);
+    } catch (error) {
+        res.status(500).send({ status: 'error', message: error.message });
+    }
+});
 
-    res.json({ status: "success", updated });
-  });
+// POST 
+router.post("/", async (req, res) => {
+    try {
+        const newProduct = await productModel.create(req.body);
+        
+        
+        const io = req.app.get("io");
+        const allProducts = await productModel.find().lean();
+        io.emit("updateProducts", allProducts);
 
-  return router;
-};
+        res.status(201).send({ status: "success", payload: newProduct });
+    } catch (error) {
+        res.status(500).send({ status: "error", message: error.message });
+    }
+});
+
+// DELETE
+router.delete("/:pid", async (req, res) => {
+    try {
+        const { pid } = req.params;
+        await productModel.findByIdAndDelete(pid);
+
+        const io = req.app.get("io");
+        const allProducts = await productModel.find().lean();
+        io.emit("updateProducts", allProducts);
+
+        res.send({ status: "success", message: "Producto eliminado" });
+    } catch (error) {
+        res.status(500).send({ status: "error", message: error.message });
+    }
+});
+
+export default router;

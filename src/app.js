@@ -1,208 +1,109 @@
-
+import 'dotenv/config';
 import express from "express";
-import { fileURLToPath } from "url";
-import path from "path";
-import { Server as IOServer } from "socket.io";
+import mongoose from "mongoose";
 import handlebars from "express-handlebars";
+import { Server } from "socket.io";
+import path from "path";
+import { fileURLToPath } from "url";
 
-import ProductManager from "./productmanager.js"; 
+// Importación de Routers
+import productsRouter from "./routes/products.router.js";
+import cartsRouter from "./routes/carts.router.js";
+import viewsRouter from "./routes/views.router.js";
 
+// Importación de Modelos y Herramientas
+import { productModel } from "./models/product.model.js";
+import uploader from "./utils/uploader.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = 8080;
 
+// --- 1. CONEXIÓN A MONGODB ---
 
-const manager = new ProductManager(path.join(__dirname, "products.json"));
+const MONGO_URL = process.env.MONGO_URL; 
 
+mongoose.connect(MONGO_URL)
+    .then(() => console.log("✅ Conectado a MongoDB (vía variables de entorno)"))
+    .catch(err => console.error("❌ Error al conectar a MongoDB:", err));
 
+// --- 2. CONFIGURACIONES ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-
 app.use(express.static(path.join(__dirname, "public")));
 
-
+// Configuración de Handlebars
 app.engine("handlebars", handlebars.engine());
 app.set("view engine", "handlebars");
 app.set("views", path.join(__dirname, "views"));
 
+// --- 3. RUTAS ---
+app.use("/api/products", productsRouter);
+app.use("/api/carts", cartsRouter);
+app.use("/", viewsRouter);
 
-app.get("/", async (req, res) => {
-  try {
-    const products = await manager.getProducts();
-    return res.render("home", { products });
-  } catch (err) {
-    return res.status(500).send("Error leyendo productos: " + err.message);
-  }
+
+app.get('/', (req, res) => {
+    res.redirect('/products');
 });
 
+// --- 4. LÓGICA DE CARGA DE PRODUCTOS (Live Products) ---
 
-app.get("/realtimeproducts", async (req, res) => {
-  try {
-    const products = await manager.getProducts();
-    return res.render("realTimeProducts", { products });
-  } catch (err) {
-    return res.status(500).send("Error leyendo productos: " + err.message);
-  }
-});
+app.post("/api/live-products", uploader.single("image"), async (req, res) => {
+    try {
+        const { title, price, username, phone } = req.body;
+        const thumbnail = req.file ? `/img/${req.file.filename}` : "";
 
+        
+        const newProd = await productModel.create({
+            title,
+            price: Number(price),
+            user: username,
+            phone,
+            thumbnail,
+            description: "Producto cargado desde el panel en vivo", 
+            code: `code-${Date.now()}`,
+            stock: 10,
+            category: "General",
+            status: true
+        });
 
-app.post("/api/products", async (req, res) => {
-  try {
-    const newProdData = req.body; 
-    const updatedProducts = await manager.addProduct(newProdData); 
-    
-    const io = req.app.get("io");
-    if (io) io.emit("updateProducts", updatedProducts);
-    return res.status(201).json({ status: "success", products: updatedProducts });
-  } catch (err) {
-    return res.status(500).json({ status: "error", message: err.message });
-  }
-});
+        
+        const allProducts = await productModel.find().lean();
+        const io = req.app.get("io");
+        io.emit("updateProducts", allProducts);
 
-app.delete("/api/products/:pid", async (req, res) => {
-  try {
-    const pid = req.params.pid;
-    const updatedProducts = await manager.deleteProductById(pid); 
-    const io = req.app.get("io");
-    if (io) io.emit("updateProducts", updatedProducts);
-    return res.json({ status: "success", products: updatedProducts });
-  } catch (err) {
-    return res.status(500).json({ status: "error", message: err.message });
-  }
-});
-
-
-const httpServer = app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-
-const io = new IOServer(httpServer);
-
-
-app.set("io", io);
-app.set("productManager", manager);
-
-import fs from "fs";
-import crypto from "crypto";
-
-
-
-
-const LIVE_PRODUCTS_FILE = path.join(__dirname, "liveProducts.json");
-
-
-let liveProducts = [];
-if (fs.existsSync(LIVE_PRODUCTS_FILE)) {
-  liveProducts = JSON.parse(fs.readFileSync(LIVE_PRODUCTS_FILE, "utf-8"));
-}
-
-
-import multer from "multer";
-
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, "public", "img")),
-  filename: (req, file, cb) => {
-    
-    const unique = Date.now() + "-" + file.originalname.replace(/\s+/g, "_");
-    cb(null, unique);
-  }
-});
-const upload = multer({ storage });
-
-
-app.post("/api/live-products", upload.single("image"), (req, res) => {
-  try {
-    
-    const { title, price, username, phone } = req.body;
-    
-    const file = req.file;
-    
-    const thumbnail = file ? `/img/${file.filename}` : null;
-
-    
-    const LIVE_PRODUCTS_FILE = path.join(__dirname, "liveProducts.json");
-    let liveProducts = [];
-    if (fs.existsSync(LIVE_PRODUCTS_FILE)) {
-      liveProducts = JSON.parse(fs.readFileSync(LIVE_PRODUCTS_FILE, "utf-8"));
+        res.json({ status: "success", product: newProd });
+    } catch (err) {
+        res.status(500).json({ status: "error", message: err.message });
     }
-
-    
-    const newProd = {
-      id: crypto.randomUUID(),
-      title: title || "Sin título",
-      price: price ? Number(price) : 0,
-      user: username || "anónimo",
-      phone: phone || "",
-      image: thumbnail
-    };
-
-    liveProducts.push(newProd);
-    fs.writeFileSync(LIVE_PRODUCTS_FILE, JSON.stringify(liveProducts, null, 2));
-
-    
-    (async () => {
-      const originalProducts = await manager.getProducts();
-      io.emit("updateProducts", [...originalProducts, ...liveProducts]);
-    })();
-
-    return res.json({ status: "success", product: newProd });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ status: "error", message: err.message });
-  }
 });
 
+// --- 5. SERVIDOR Y SOCKETS ---
+const httpServer = app.listen(PORT, () => {
+    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+});
+
+const io = new Server(httpServer);
+app.set("io", io); 
 
 io.on("connection", async (socket) => {
-  console.log("Cliente conectado:", socket.id);
-
-  socket.on("deleteProduct", (productId) => {
-  
-  liveProducts = liveProducts.filter(p => p.id !== productId);
-
-  
-  fs.writeFileSync(
-    LIVE_PRODUCTS_FILE,
-    JSON.stringify(liveProducts, null, 2)
-  );
-
-  
-  manager.getProducts().then(originalProducts => {
-    io.emit("updateProducts", [...originalProducts, ...liveProducts]);
-  });
-  });
-
-
-  
-
-  
-  socket.emit("updateProducts", liveProducts);
-
-  
-  socket.on("newProduct", (data) => {
-    const newProduct = {
-      id: crypto.randomUUID(),
-      ...data
-    };
-
-    liveProducts.push(newProduct);
+    console.log("Cliente conectado:", socket.id);
 
     
-    fs.writeFileSync(
-      LIVE_PRODUCTS_FILE,
-      JSON.stringify(liveProducts, null, 2)
-    );
+    const products = await productModel.find().lean();
+    socket.emit("updateProducts", products);
 
     
-    io.emit("updateProducts", [...originalProducts, ...liveProducts]);
-  });
+    socket.on("deleteProduct", async (productId) => {
+        try {
+            await productModel.findByIdAndDelete(productId);
+            const updatedProducts = await productModel.find().lean();
+            io.emit("updateProducts", updatedProducts);
+        } catch (error) {
+            console.error("Error al eliminar:", error);
+        }
+    });
 });
-
-
-

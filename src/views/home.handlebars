@@ -1,23 +1,33 @@
 <h1 class="page-title">Productos actuales</h1>
 
-<ul class="products-list">
-  {{#each products}}
-    <li class="product-card">
-      <img 
-        class="product-image"
-        src="{{thumbnail}}" 
-        alt="{{title}}" 
-      />
+<div class="products-container">
+    <ul class="products-list">
+        {{#each products}}
+        <li class="product-card">
+            <img class="product-image" src="{{this.thumbnail}}" alt="{{this.title}}" />
+            <div class="product-info">
+                <h3 class="product-title">{{this.title}}</h3>
+                <p class="product-price">$ {{this.price}}</p>
+            </div>
+        </li>
+        {{/each}}
+    </ul>
+</div>
 
-      <div class="product-info">
-        <h3 class="product-title">{{title}}</h3>
-        <p class="product-price">$ {{price}}</p>
-      </div>
-    </li>
-  {{/each}}
-</ul>
 
-<a class="realtime-link" href="/realtimeproducts">
-  Ir a productos en tiempo real
-</a>
+<div class="pagination-controls">
+    {{#if hasPrevPage}}
+        <a href="/products?page={{prevPage}}" class="nav-btn">Anterior</a>
+    {{/if}}
+
+    <span class="page-status">Página {{page}} de {{totalPages}}</span>
+
+    {{#if hasNextPage}}
+        <a href="/products?page={{nextPage}}" class="nav-btn">Siguiente</a>
+    {{/if}}
+</div>
+
+<div class="footer-links">
+    <a class="realtime-link" href="/realtimeproducts">Ir a productos en tiempo real</a>
+</div>
 
